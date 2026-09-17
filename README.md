@@ -79,6 +79,25 @@ Use a completed **Save & Run All** version to preserve long-running outputs. Dra
 
 **Stack:** Python, PyTorch, torchvision, Hugging Face Transformers, pydicom, pandas, NumPy, scikit-learn, Matplotlib, langdetect, and tqdm. Dependencies are not yet pinned to a reproducible environment.
 
+## Running the tests
+
+The repo's test command is `pytest`:
+
+```bash
+python -m pip install pytest
+python -m pytest
+```
+
+The suite in `tests/` loads the `.ipynb` JSON, extracts the notebooks' own code cells, and verifies the fixes that protect re-execution — no GPU, dataset, or network needed. It covers:
+
+- **Restart and prerequisite guards** — running the guard cells in a namespace missing their prerequisites raises a clear `RuntimeError` naming the cell to run first (B1, B2).
+- **JSON response parsing** — clean JSON, JSON inside Markdown fences, JSON followed by brace-bearing prose (the old greedy-regex failure), and two-object responses (first object wins); unbalanced or missing braces raise the documented fallback error (B6).
+- **Atomic checkpoints** — the save helpers write a complete, parseable CSV, leave no temporary file behind, and touch the destination only through `os.replace` (B4).
+- **Structural checks** — the evaluation resume set retries rows with a recorded `ParsingError` (B3), the full-extraction loop saves in a `finally` block (B5), both figure cells end with `plt.close(fig)` (B7), and the parser copies in cells 9 and 12 stay behaviorally identical.
+- **Whole-repo compilation** — every code cell of both notebooks byte-compiles after stripping IPython magics.
+
+Requirements: `pytest` plus `pandas` and `numpy`, which the notebooks already depend on; heavy ML packages (`torch`, `transformers`, `pydicom`, `langdetect`) are stubbed automatically when not installed. The suite is hermetic and runs in under a second.
+
 ## Limitations and next steps
 
 - Train the classifier on cached features and report per-label ROC-AUC across development folds.
